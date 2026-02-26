@@ -1,0 +1,24 @@
+import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
+import { asyncHandler } from '../../utils/async-handler';
+import { loginHandler, logoutHandler, refreshHandler, registerHandler } from './auth.controller';
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { message: 'Too many auth attempts, please try again later' }
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { message: 'Too many login attempts, please try again later' }
+});
+
+export const authRouter = Router();
+
+authRouter.use(authLimiter);
+authRouter.post('/register', asyncHandler(registerHandler));
+authRouter.post('/login', loginLimiter, asyncHandler(loginHandler));
+authRouter.post('/refresh', asyncHandler(refreshHandler));
+authRouter.post('/logout', logoutHandler);

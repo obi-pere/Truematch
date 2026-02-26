@@ -1,0 +1,50 @@
+import type { Request, Response } from 'express';
+import { AppError } from '../../utils/app-error';
+import { clearAuthCookies, setAuthCookies } from '../../utils/jwt';
+import { login, refreshAuth, register } from './auth.service';
+import { loginSchema, registerSchema } from './auth.validation';
+
+export const registerHandler = async (req: Request, res: Response): Promise<void> => {
+  const dto = registerSchema.parse(req.body);
+  const authData = await register(dto);
+
+  setAuthCookies(res, authData.accessToken, authData.refreshToken);
+
+  res.status(201).json({
+    message: 'Registration successful',
+    user: authData.user
+  });
+};
+
+export const loginHandler = async (req: Request, res: Response): Promise<void> => {
+  const dto = loginSchema.parse(req.body);
+  const authData = await login(dto);
+
+  setAuthCookies(res, authData.accessToken, authData.refreshToken);
+
+  res.status(200).json({
+    message: 'Login successful',
+    user: authData.user
+  });
+};
+
+export const refreshHandler = async (req: Request, res: Response): Promise<void> => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    throw new AppError(401, 'Refresh token missing');
+  }
+
+  const authData = await refreshAuth(refreshToken);
+  setAuthCookies(res, authData.accessToken, authData.refreshToken);
+
+  res.status(200).json({
+    message: 'Session refreshed',
+    user: authData.user
+  });
+};
+
+export const logoutHandler = (_req: Request, res: Response): void => {
+  clearAuthCookies(res);
+  res.status(200).json({ message: 'Logout successful' });
+};
