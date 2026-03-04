@@ -42,7 +42,7 @@ export const StepEmailPassword = ({ onSubmit, onBack, loading, initialValues }: 
         id="email"
         type="email"
         label="Email"
-        placeholder="name@example.com"
+        placeholder="Enter your email address"
         error={errors.email?.message}
         {...register('email')}
       />
@@ -50,7 +50,7 @@ export const StepEmailPassword = ({ onSubmit, onBack, loading, initialValues }: 
         id="password"
         type="password"
         label="Password"
-        placeholder="••••••••"
+        placeholder="Enter your password"
         error={errors.password?.message}
         {...register('password')}
       />

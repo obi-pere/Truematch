@@ -254,7 +254,7 @@ export const StepApplicationSummary = ({ onSubmit, onBack, loading, initialValue
           <input
             id="universityName"
             type="search"
-            placeholder="University of Manchester"
+            placeholder="Search for your university"
             className="w-full rounded-xl border border-white/40 bg-transparent py-3 pl-9 pr-4 text-sm text-white placeholder-zinc-500 outline-none transition-all duration-200 focus:border-white/70 focus:ring-2 focus:ring-white/20"
             disabled={!universityCountryValue}
             {...register('universityName')}
@@ -300,7 +300,7 @@ export const StepApplicationSummary = ({ onSubmit, onBack, loading, initialValue
           <input
             id="courseName"
             type="search"
-            placeholder="Search for a course type (e.g., Data Science)"
+            placeholder="Search for your course type (e.g., Data Science)"
             className="w-full rounded-xl border border-white/40 bg-transparent py-3 pl-9 pr-4 text-sm text-white placeholder-zinc-500 outline-none transition-all duration-200 focus:border-white/70 focus:ring-2 focus:ring-white/20"
             {...register('courseName')}
           />

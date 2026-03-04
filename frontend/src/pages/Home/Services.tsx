@@ -32,7 +32,7 @@ export const Services = () => {
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Our Services</h2>
           <p className="mt-4 text-base leading-relaxed text-zinc-400 sm:text-lg">
-            We guide students through every step of their international study journey.
+            We guide students and foreign job seekers through every step of their international study and employment journey.
           </p>
         </div>
 

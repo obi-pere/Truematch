@@ -147,7 +147,10 @@ const toUniqueIds = (ids: string[]): string[] => Array.from(new Set(ids));
 const buildAdminPlaceholderIds = (count: number): string[] =>
   Array.from({ length: count }, (_, index) => `__unread_${index}`);
 
-const setupSocket = (set: (partial: Partial<ChatNotificationState> | ((state: ChatNotificationState) => Partial<ChatNotificationState>)) => void) => {
+const setupSocket = (
+  set: (partial: Partial<ChatNotificationState> | ((state: ChatNotificationState) => Partial<ChatNotificationState>)) => void,
+  get: () => ChatNotificationState
+) => {
   if (!connectedUserId || !connectedUserRole) {
     return;
   }
@@ -203,6 +206,11 @@ const setupSocket = (set: (partial: Partial<ChatNotificationState> | ((state: Ch
       }
 
       if (activeUserRole === 'USER') {
+        const context = get().context;
+
+        if (context.isOnChatTab && context.activePeerUserId === payload.fromUserId) {
+          return;
+        }
         set((state) => ({
           unreadUserMessageCount: state.unreadUserMessageCount + 1
         }));
@@ -254,7 +262,7 @@ const setupSocket = (set: (partial: Partial<ChatNotificationState> | ((state: Ch
       }
 
       if (connectionConsumers > 0 && connectedUserId && connectedUserRole && !socket) {
-        setupSocket(set);
+        setupSocket(set, get);
       }
     }, 1200);
   };
@@ -290,7 +298,7 @@ export const useChatNotificationStore = create<ChatNotificationState>((set, get)
 
     connectedUserId = user.id;
     connectedUserRole = user.role;
-    setupSocket(set);
+    setupSocket(set, get);
     void get().hydrateUnreadSummary();
   },
 

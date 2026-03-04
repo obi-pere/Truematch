@@ -101,11 +101,11 @@ export const Hero = () => {
 
         <h1 className="mx-auto max-w-4xl text-balance text-center text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
           Your trusted platform for{' '}
-          <span className="text-gradient-brand">Africa&apos;s global learners</span>
+          <span className="text-gradient-brand">global learners and international job seekers</span>
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-center text-base leading-relaxed text-zinc-400 sm:text-lg">
-          Start your application journey for schools in top destinations with a guided, secure, and fast process.
+          Start your study or work abroad journey in top global destinations with a guided, secure, and efficient process.
         </p>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">

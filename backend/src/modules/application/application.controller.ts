@@ -106,6 +106,10 @@ export const getApplicationByIdHandler = async (req: Request, res: Response): Pr
     throw new AppError(403, 'Forbidden');
   }
 
+  if (application.applicationType === 'study_scholarship' && !application.applicationStatus) {
+    throw new AppError(500, 'Invalid application status for study application');
+  }
+
   res.status(200).json({
     id: application.id,
     universityName: application.universityName,
@@ -129,6 +133,10 @@ export const getApplicationTrackerByIdHandler = async (req: Request, res: Respon
 
   if (application.applicationType !== 'study_scholarship') {
     throw new AppError(400, 'Tracker is available for study applications only');
+  }
+
+  if (!application.applicationStatus) {
+    throw new AppError(500, 'Invalid application status for study application');
   }
 
   res.status(200).json({

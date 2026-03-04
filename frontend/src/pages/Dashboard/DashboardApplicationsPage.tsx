@@ -4,10 +4,9 @@ import { Link } from 'react-router-dom';
 import { ApplicationSummaryCard } from '../../components/application/ApplicationSummaryCard';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Snackbar } from '../../components/ui/Snackbar';
+import { SNACKBAR_AUTO_DISMISS_DELAY_MS } from '../../constants/snackbar';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { applicationService } from '../../services/application.service';
-
-const DELETE_SUCCESS_SNACKBAR_DURATION_MS = 4200;
 
 export const DashboardApplicationsPage = () => {
   const { profile, isLoading: loading, errorMessage, refreshDashboardData } = useDashboardData();
@@ -28,7 +27,7 @@ export const DashboardApplicationsPage = () => {
 
     const timer = window.setTimeout(() => {
       setShowDeleteSuccessSnackbar(false);
-    }, DELETE_SUCCESS_SNACKBAR_DURATION_MS);
+    }, SNACKBAR_AUTO_DISMISS_DELAY_MS);
 
     return () => {
       window.clearTimeout(timer);
@@ -56,8 +55,8 @@ export const DashboardApplicationsPage = () => {
 
   return (
     <section className="flex h-full min-h-0 flex-col">
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-5 pb-3">
-        <h2 className="text-base font-semibold text-zinc-100">My applications</h2>
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-5 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        <h2 className="text-xl font-semibold tracking-tight text-zinc-100">My applications</h2>
 
         {loading ? <LoadingSpinner className="mt-4 py-10" /> : null}
         {errorMessage ? <p className="mt-4 text-sm text-rose-400">{errorMessage}</p> : null}
@@ -74,7 +73,7 @@ export const DashboardApplicationsPage = () => {
         ) : null}
 
         {!loading && !errorMessage && applications.length > 0 ? (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-3 pb-10">
             {applications.map((application) => {
               const applicationDetailsPath =
                 application.applicationType === 'work_employment'

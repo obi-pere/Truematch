@@ -1,36 +1,42 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 type Testimonial = {
   name: string;
-  location: string;
+  country: string;
+  sex: 'Male' | 'Female';
   quote: string;
   image: string;
 };
 
 const testimonials: Testimonial[] = [
   {
-    name: 'Amina Yusuf',
-    location: 'Lagos, Nigeria',
-    quote:
-      'Truematch made my UK admission process simple and clear. Their team reviewed every document and guided me until I received my offer.',
-    image:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80',
+    name: 'Sipho Dlamini',
+    country: 'South Africa',
+    sex: 'Male',
+    quote: 'TrueMatch helped me secure a job abroad and made the process seamless. I am grateful for their support and guidance.',
+    image: 'https://res.cloudinary.com/dykntxvyw/image/upload/v1772607267/20260304_070306_yoegff.jpg',
   },
   {
-    name: 'Kwame Mensah',
-    location: 'Accra, Ghana',
-    quote:
-      'From choosing programs to visa preparation, I had support at every step. The process felt transparent, fast, and professional.',
-    image:
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
+    name: 'Adaobi Okafor',
+    country: 'Nigeria',
+    sex: 'Female',
+    quote: 'The team at TrueMatch was always available to answer my questions. My application was successful and stress-free.',
+    image: 'https://res.cloudinary.com/dykntxvyw/image/upload/v1772607267/20260304_065756_u92l1d.jpg',
   },
   {
-    name: 'Linet Njeri',
-    location: 'Nairobi, Kenya',
-    quote:
-      'I appreciated the personalized advice and quick communication. My Australia application was handled with confidence and precision.',
-    image:
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
+    name: 'Wanjiru Mwangi',
+    country: 'Kenya',
+    sex: 'Female',
+    quote: 'I received excellent advice and support throughout my application. TrueMatch made everything easy!',
+    image: 'https://res.cloudinary.com/dykntxvyw/image/upload/v1772607266/20260304_070033_kdpydb.jpg',
+  },
+  {
+    name: 'Brian Otieno',
+    country: 'Kenya',
+    sex: 'Male',
+    quote: 'Thanks to TrueMatch, I found a great opportunity and relocated smoothly. Highly recommended!',
+    image: 'https://res.cloudinary.com/dykntxvyw/image/upload/v1772607266/20260304_070507_lsww2k.jpg',
   },
 ];
 
@@ -41,7 +47,7 @@ export const Testimonials = () => {
   useEffect(() => {
     const id = window.setInterval(() => {
       setActiveIndex((i) => (i + 1) % total);
-    }, 5000);
+    }, 9000); // Increased interval for readability
     return () => window.clearInterval(id);
   }, [total]);
 
@@ -50,28 +56,35 @@ export const Testimonials = () => {
   return (
     <section className="bg-dark-bg pb-16 pt-8 sm:pb-20 sm:pt-10">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Testimonials</h2>
-        </div>
+        {/* Title removed as requested */}
 
         <div className="relative mx-auto max-w-4xl rounded-2xl p-6 sm:p-8">
-          <div key={activeIndex} className="animate-fade-in flex flex-col items-center text-center">
-            <img
-              src={active.image}
-              alt={active.name}
-              className="mt-3 h-20 w-20 rounded-full object-cover ring-2 ring-white/10 sm:h-24 sm:w-24"
-              loading="lazy"
-            />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2, ease: 'easeInOut' }}
+              className="flex flex-col items-center text-center"
+            >
+              <img
+                src={active.image}
+                alt={active.name}
+                className="mt-3 h-20 w-20 rounded-full object-cover ring-2 ring-white/10 sm:h-24 sm:w-24"
+                loading="lazy"
+              />
 
-            <div className="mt-6 w-full max-w-2xl px-2 text-zinc-300 sm:px-4">
-              <p className="text-base leading-relaxed sm:text-lg">&quot;{active.quote}&quot;</p>
-            </div>
+              <div className="mt-6 w-full max-w-2xl px-2 text-zinc-300 sm:px-4">
+                <p className="text-base leading-relaxed sm:text-lg">&quot;{active.quote}&quot;</p>
+              </div>
 
-            <div className="mt-4">
-              <p className="text-base font-semibold text-zinc-100">{active.name}</p>
-              <p className="text-sm text-zinc-400">{active.location}</p>
-            </div>
-          </div>
+              <div className="mt-4">
+                <p className="text-base font-semibold text-zinc-100">{active.name},</p>
+                <p className="text-sm text-zinc-400">{active.country}</p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
 
           <div className="mt-7 flex items-center justify-center gap-2">
             {testimonials.map((testimonial, index) => {

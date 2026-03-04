@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
+// Add Google Fonts link for Montserrat
+if (!document.getElementById('montserrat-font-link')) {
+  const link = document.createElement('link');
+  link.id = 'montserrat-font-link';
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap';
+  document.head.appendChild(link);
+}
 import { api } from '../../services/api';
 
-const LOGO_FONT = 'Manrope';
+const LOGO_FONT = 'Montserrat';
 const SQUARE_SIZE = 200;
+const OFFSET = 40;
 const backSquare = { x: 132, y: 0, size: SQUARE_SIZE, letter: 'M' };
 const frontSquare = { x: 0, y: 96, size: SQUARE_SIZE, letter: 'T' };
 const LOGO_WIDTH = Math.max(backSquare.x + backSquare.size, frontSquare.x + frontSquare.size);
@@ -55,7 +64,7 @@ const drawLogo = (canvas: HTMLCanvasElement) => {
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `800 188px "${LOGO_FONT}", ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif`;
+    ctx.font = `900 80px "${LOGO_FONT}", ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif`;
     ctx.fillText(letter, x + size / 2, y + size / 2 + 10);
 
     ctx.restore();

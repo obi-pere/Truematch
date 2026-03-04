@@ -10,6 +10,7 @@ import {
 	updateApplicationStatusHandler
 } from '../application/application.controller';
 import { deleteUserForAdminHandler, getAllUsersForAdminHandler } from './admin.user.controller';
+import { sendNotificationToUserByAdminHandler } from '../notification/notification.controller';
 
 export const adminRouter = Router();
 
@@ -19,4 +20,5 @@ adminRouter.patch('/applications/:id/status', authMiddleware, requireAdmin, asyn
 adminRouter.delete('/applications/:id', authMiddleware, requireAdmin, asyncHandler(deleteApplicationForAdminHandler));
 adminRouter.get('/users', authMiddleware, requireAdmin, asyncHandler(getAllUsersForAdminHandler));
 adminRouter.delete('/users/:id', authMiddleware, requireAdmin, asyncHandler(deleteUserForAdminHandler));
+adminRouter.post('/users/:id/notifications', authMiddleware, requireAdmin, asyncHandler(sendNotificationToUserByAdminHandler));
 adminRouter.post('/assets/logo', authMiddleware, requireAdmin, uploadLogoImage, asyncHandler(uploadNavbarLogoHandler));

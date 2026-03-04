@@ -31,10 +31,9 @@ const verificationResendLimiter = rateLimit({
 
 export const authRouter = Router();
 
-authRouter.use(authLimiter);
-authRouter.post('/register', asyncHandler(registerHandler));
+authRouter.post('/register', authLimiter, asyncHandler(registerHandler));
 authRouter.post('/login', loginLimiter, asyncHandler(loginHandler));
-authRouter.post('/refresh', asyncHandler(refreshHandler));
+authRouter.post('/refresh', authLimiter, asyncHandler(refreshHandler));
 authRouter.post('/logout', logoutHandler);
 authRouter.get('/email-verification/verify', asyncHandler(verifyEmailHandler));
 authRouter.post('/email-verification/resend', authMiddleware, verificationResendLimiter, asyncHandler(resendEmailVerificationHandler));

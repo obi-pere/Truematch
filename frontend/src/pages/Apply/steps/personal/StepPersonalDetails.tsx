@@ -50,7 +50,7 @@ export const StepPersonalDetails = ({ onSubmit, loading, initialValues, onBack }
       <Input
         id="fullName"
         label="Full Name"
-        placeholder="Ada Okafor"
+        placeholder="Enter full name"
         error={errors.fullName?.message}
         {...register('fullName')}
       />
@@ -81,7 +81,7 @@ export const StepPersonalDetails = ({ onSubmit, loading, initialValues, onBack }
           id="countryCode"
           type="tel"
           label="Code"
-          placeholder="+234"
+          placeholder="+ code"
           maxLength={6}
           error={errors.countryCode?.message}
           {...register('countryCode')}
@@ -90,8 +90,8 @@ export const StepPersonalDetails = ({ onSubmit, loading, initialValues, onBack }
           id="phoneNumber"
           type="tel"
           label="Phone Number"
-          placeholder="8012345678"
-          maxLength={12}
+          placeholder="Enter phone number"
+          maxLength={15}
           error={errors.phoneNumber?.message}
           {...register('phoneNumber')}
         />

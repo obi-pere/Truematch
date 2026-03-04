@@ -40,9 +40,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    await authService.logout();
-    useDashboardStore.getState().clearDashboardData();
-    set({ user: null, isAuthenticated: false });
+    try {
+      await authService.logout();
+    } catch (_error) {
+    } finally {
+      useDashboardStore.getState().clearDashboardData();
+      set({ user: null, isAuthenticated: false });
+    }
   },
 
   bootstrapSession: async () => {

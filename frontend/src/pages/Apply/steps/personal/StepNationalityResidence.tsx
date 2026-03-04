@@ -41,28 +41,28 @@ export const StepNationalityResidence = ({ onSubmit, onBack, loading, initialVal
       <Input
         id="nationality"
         label="Nationality"
-        placeholder="Nigerian"
+        placeholder="Enter nationality"
         error={errors.nationality?.message}
         {...register('nationality')}
       />
       <Input
         id="countryOfResidence"
         label="Country of Residence"
-        placeholder="Nigeria"
+        placeholder="Enter country of residence"
         error={errors.countryOfResidence?.message}
         {...register('countryOfResidence')}
       />
       <Input
         id="stateOrProvince"
         label="State / Province"
-        placeholder="Lagos"
+        placeholder="Enter state or province"
         error={errors.stateOrProvince?.message}
         {...register('stateOrProvince')}
       />
       <Input
         id="residentialAddress"
         label="Residential Address"
-        placeholder="12 Herbert Macaulay Way, Yaba"
+        placeholder="Enter residential address"
         error={errors.residentialAddress?.message}
         {...register('residentialAddress')}
       />

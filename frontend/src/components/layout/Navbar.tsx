@@ -18,7 +18,7 @@ export const Navbar = () => {
           </Link>
         }
 
-        {isHomePage && (
+        {isHomePage ? (
           <div className="flex items-center gap-3">
             <Link
               to={loginTarget}
@@ -27,7 +27,7 @@ export const Navbar = () => {
               {user ? 'Dashboard' : 'Login'}
             </Link>
           </div>
-        )}
+        ) : null}
       </nav>
     </header>
   );

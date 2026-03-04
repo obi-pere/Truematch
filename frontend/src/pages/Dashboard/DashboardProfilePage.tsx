@@ -4,6 +4,7 @@ import { useDashboardData } from '../../hooks/useDashboardData';
 import { useAuth } from '../../hooks/useAuth';
 import { authService } from '../../services/auth.service';
 import { Snackbar } from '../../components/ui/Snackbar';
+import { SNACKBAR_AUTO_DISMISS_DELAY_MS } from '../../constants/snackbar';
 import type { User, UserWithApplication } from '../../types/user';
 import { buildInitialAvatarUrl } from '../../utils/avatar';
 
@@ -119,7 +120,7 @@ export const DashboardProfilePage = () => {
     snackbarTimerRef.current = window.setTimeout(() => {
       setShowSuccessSnackbar(false);
       snackbarTimerRef.current = null;
-    }, 2200);
+    }, SNACKBAR_AUTO_DISMISS_DELAY_MS);
   };
 
   const syncAuthUser = (updatedProfile: UserWithApplication) => {
@@ -325,12 +326,11 @@ export const DashboardProfilePage = () => {
   return (
     <section className="flex h-full min-h-0 flex-col">
       <Snackbar message="Profile updated successfully" visible={showSuccessSnackbar} position="bottom-center" />
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-5 pb-3">
-        <div className="max-w-5xl divide-y divide-white/10">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-5 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        <h2 className="text-xl font-semibold tracking-tight text-zinc-100">Profile</h2>
+
+        <div className="mt-4 max-w-5xl divide-y divide-white/10 pb-10">
           <section>
-            <div className="px-5 py-4 sm:px-6">
-              <h3 className="text-base font-semibold uppercase tracking-wide text-zinc-100">Personal Information</h3>
-            </div>
             <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6">
               <div className="mb-4">
                 <div className="inline-block">

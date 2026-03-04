@@ -9,6 +9,7 @@ export type AdminApplicationListItem = {
   universityName: string | null;
   courseName: string | null;
   skillOrProfession: string | null;
+  workCountry: string | null;
   intake: string | null;
   createdAt: string;
   user: {
@@ -21,8 +22,9 @@ export type AdminApplicationListItem = {
 export type AdminApplicationDetails = {
   id: string;
   applicationType: string;
-  applicationStatus: ApplicationStatus;
+  applicationStatus: ApplicationStatus | null;
   countryOfResidence: string;
+  workCountry: string | null;
   internationalPassportUrl: string | null;
   user: {
     id: string;

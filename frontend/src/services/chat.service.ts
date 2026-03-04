@@ -32,6 +32,7 @@ export type AdminConversation = {
   user: ChatUser;
   lastMessageAt: string;
   lastMessagePreview: string;
+  lastMessageFromUserId: string;
   unreadMessageCount: number;
 };
 
@@ -97,8 +98,10 @@ export const decodeAttachmentMessageContent = (
 };
 
 const resolveWsUrl = (): string => {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
+  const wsUrl = import.meta.env.VITE_WS_URL;
+  if (wsUrl) return wsUrl;
 
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? '/api/v1';
   if (apiBaseUrl.startsWith('http://') || apiBaseUrl.startsWith('https://')) {
     const parsed = new URL(apiBaseUrl);
     parsed.protocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -107,7 +110,6 @@ const resolveWsUrl = (): string => {
     parsed.hash = '';
     return parsed.toString();
   }
-
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}/ws`;
 };

@@ -8,6 +8,8 @@ import { hashPassword } from '../../utils/hash';
 import { signAccessToken, signRefreshToken } from '../../utils/jwt';
 import { sendEmailVerification } from '../auth/auth.service';
 import { addConversationMessage, getAssignedAdminForUser } from '../chat/chat.service';
+import { pushNotificationToUser } from '../chat/websocket';
+import { ensureRequiredActionNotificationsForUser } from '../notification/notification.service';
 import type { ApplicationDocumentType, ReapplyApplicationDto, SubmitApplicationDto } from './application.validation';
 
 type SanitizedUser = Omit<User, 'password'>;
@@ -61,7 +63,11 @@ const isApplicationStatus = (value: string): value is ApplicationStatus => {
   return Object.values(APPLICATION_STATUS).some((status) => status === value);
 };
 
-const parseApplicationStatus = (value: string): ApplicationStatus => {
+const parseApplicationStatus = (value: string | null): ApplicationStatus | null => {
+  if (!value) {
+    return null;
+  }
+
   if (isApplicationStatus(value)) {
     return value;
   }
@@ -92,9 +98,15 @@ const buildCountrySpecificOfferFields = (universityCountry?: string) => {
 };
 
 const buildWelcomeMessage = (userFullName: string, adminFullName: string, applicationType: SubmitApplicationDto['applicationType']) => {
-  const processLabel = applicationType === 'study_scholarship' ? 'admission process' : 'work application process';
+  const processLabel = applicationType === 'study_scholarship' ? 'study application process' : 'work application process';
 
-  return `Welcome onboard, ${userFullName}. Hi, ${userFullName}, I am ${adminFullName}, and I have been assigned to assist you throughout your ${processLabel}. Please feel free to reach out here anytime if you need guidance.`;
+  return `Hello ${userFullName},
+
+My name is ${adminFullName}, and I am your assigned application advisor at Truematch.
+
+I will be supporting you throughout your ${processLabel}, including guidance on documentation, progress updates, and next steps.
+
+If you need assistance at any point, please send me a message here and I will be glad to help.`;
 };
 
 export const submitApplication = async (payload: SubmitApplicationDto): Promise<ApplicationResult> => {
@@ -138,7 +150,8 @@ export const submitApplication = async (payload: SubmitApplicationDto): Promise<
         studyMode: payload.studyMode,
         intake: payload.intake,
         ...buildCountrySpecificOfferFields(payload.universityCountry),
-        applicationStatus: APPLICATION_STATUS.APPLICATION_PENDING
+        applicationStatus:
+          payload.applicationType === 'study_scholarship' ? APPLICATION_STATUS.APPLICATION_PENDING : null
       }
     });
 
@@ -168,6 +181,15 @@ export const submitApplication = async (payload: SubmitApplicationDto): Promise<
   } catch (error) {
     console.error('Failed to send verification email after application submission', error);
   }
+
+  const createdSystemNotifications = await ensureRequiredActionNotificationsForUser(user.id);
+
+  createdSystemNotifications.forEach((notification) => {
+    pushNotificationToUser(user.id, {
+      type: 'notification',
+      notification
+    });
+  });
 
   return {
     user: sanitizeUser(user),
@@ -250,16 +272,28 @@ export const reapplyApplication = async (
     studyMode: payload.applicationType === 'study_scholarship' ? payload.studyMode : null,
     intake: payload.applicationType === 'study_scholarship' ? payload.intake : null,
     ...buildCountrySpecificOfferFields(payload.applicationType === 'study_scholarship' ? payload.universityCountry : undefined),
-    applicationStatus: APPLICATION_STATUS.APPLICATION_PENDING
+    applicationStatus:
+      payload.applicationType === 'study_scholarship' ? APPLICATION_STATUS.APPLICATION_PENDING : null
   };
 
   try {
-    return await prisma.application.create({
+    const createdApplication = await prisma.application.create({
       data: {
         userId,
         ...applicationData
       }
     });
+
+    const createdSystemNotifications = await ensureRequiredActionNotificationsForUser(userId);
+
+    createdSystemNotifications.forEach((notification) => {
+      pushNotificationToUser(userId, {
+        type: 'notification',
+        notification
+      });
+    });
+
+    return createdApplication;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       throw new AppError(409, 'Reapply is blocked by a legacy unique application constraint. Apply latest migrations.');
@@ -275,7 +309,7 @@ export type ApplicationStatusRecord = {
   applicationType: string;
   universityName: string | null;
   universityCountry: string | null;
-  applicationStatus: ApplicationStatus;
+  applicationStatus: ApplicationStatus | null;
 };
 
 export type ApplicationStatusResponse = {
@@ -295,6 +329,7 @@ export type AdminApplicationListItem = {
   universityName: string | null;
   courseName: string | null;
   skillOrProfession: string | null;
+  workCountry: string | null;
   intake: string | null;
   createdAt: Date;
   user: {
@@ -307,8 +342,9 @@ export type AdminApplicationListItem = {
 export type AdminApplicationDetails = {
   id: string;
   applicationType: string;
-  applicationStatus: ApplicationStatus;
+  applicationStatus: ApplicationStatus | null;
   countryOfResidence: string;
+  workCountry: string | null;
   internationalPassportUrl: string | null;
   user: {
     id: string;
@@ -329,6 +365,7 @@ export const getAllApplicationsForAdmin = async (): Promise<AdminApplicationList
       universityName: true,
       courseName: true,
       skillOrProfession: true,
+      workCountry: true,
       intake: true,
       createdAt: true,
       user: {
@@ -362,6 +399,7 @@ export const getApplicationDetailsForAdmin = async (applicationId: string): Prom
       applicationType: true,
       applicationStatus: true,
       status: true,
+      workCountry: true,
       internationalPassportUrl: true,
       user: {
         select: {
@@ -377,7 +415,10 @@ export const getApplicationDetailsForAdmin = async (applicationId: string): Prom
   return {
     ...application,
     countryOfResidence: application.user.countryOfResidence ?? 'N/A',
-    applicationStatus: parseApplicationStatus(application.applicationStatus)
+    applicationStatus:
+      application.applicationType === 'study_scholarship'
+        ? parseApplicationStatus(application.applicationStatus)
+        : null
   };
 };
 
@@ -404,7 +445,10 @@ export const getApplicationStatusById = async (applicationId: string): Promise<A
     applicationType: application.applicationType,
     universityName: application.universityName,
     universityCountry: application.universityCountry,
-    applicationStatus: parseApplicationStatus(application.applicationStatus)
+    applicationStatus:
+      application.applicationType === 'study_scholarship'
+        ? parseApplicationStatus(application.applicationStatus)
+        : null
   };
 };
 
@@ -414,11 +458,15 @@ export const updateApplicationStatusById = async (
 ): Promise<ApplicationStatusResponse> => {
   const existing = await prisma.application.findUnique({
     where: { id: applicationId },
-    select: { id: true }
+    select: { id: true, applicationType: true }
   });
 
   if (!existing) {
     throw new AppError(404, 'Application not found');
+  }
+
+  if (existing.applicationType !== 'study_scholarship') {
+    throw new AppError(400, 'Application status is only available for study applications');
   }
 
   const updatedApplication = await prisma.application.update({

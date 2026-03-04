@@ -3,8 +3,10 @@ import type { AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from '../../components/layout/Footer';
 import { Navbar } from '../../components/layout/Navbar';
+import { Breadcrumbs } from '../../components/ui/Breadcrumbs';
 import { Snackbar } from '../../components/ui/Snackbar';
 import { Stepper } from '../../components/ui/Stepper';
+import { SNACKBAR_AUTO_DISMISS_DELAY_MS } from '../../constants/snackbar';
 import { useAuth } from '../../hooks/useAuth';
 import { applicationService } from '../../services/application.service';
 import {
@@ -98,7 +100,6 @@ const emptyPersonalInfo: PersonalDetailsValues = {
   passportExpiryDate: ''
 };
 
-const SUCCESS_TOAST_DURATION_MS = 4200;
 const SUCCESS_NAVIGATION_DELAY_MS = 2400;
 
 export const ApplyPage = () => {
@@ -137,7 +138,7 @@ export const ApplyPage = () => {
 
     const timer = window.setTimeout(() => {
       setShowSuccessSnackbar(false);
-    }, SUCCESS_TOAST_DURATION_MS);
+    }, SNACKBAR_AUTO_DISMISS_DELAY_MS);
 
     return () => {
       window.clearTimeout(timer);
@@ -336,6 +337,13 @@ export const ApplyPage = () => {
   return (
     <div className="flex min-h-screen flex-col bg-dark-bg">
       <Navbar />
+      <div className="mx-auto w-full max-w-xl px-4 pt-2 sm:px-6 sm:pt-3 lg:px-8">
+        <div className="py-1">
+          <Breadcrumbs
+            items={[{ label: 'Home', href: '/' }, { label: 'Apply' }]}
+          />
+        </div>
+      </div>
       <Snackbar
         message={isReapplyFlow ? 'Application reapplied successfully' : 'Application submitted successfully'}
         visible={showSuccessSnackbar}
@@ -346,14 +354,13 @@ export const ApplyPage = () => {
           <div className="mb-8 w-full text-left sm:mb-10">
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Start Your Application</h1>
             <p className="mt-2 text-sm leading-relaxed text-zinc-300 sm:text-base">
-              Complete your application in a few guided steps. Please provide accurate information to help our
-              admissions team review your profile efficiently and support your next stage with confidence.
+              Complete your study or employment application in a few guided steps. Please provide accurate information to help our admissions and recruitment team review your profile efficiently and support your next stage with confidence.
             </p>
           </div>
         ) : null}
 
         <div className="flex flex-1 items-center">
-          <div className="w-full space-y-8 rounded-2xl border border-white/40 bg-transparent p-6 sm:p-10">
+          <div className="w-full space-y-8 rounded-2xl border border-[1px] border-white/40 bg-transparent p-6 sm:p-10">
           <div className="space-y-2 text-left">
             <h1 className="text-2xl font-bold text-white sm:text-3xl">{currentFlowStep.title}</h1>
             <p className="text-sm text-zinc-400">{currentFlowStep.description}</p>

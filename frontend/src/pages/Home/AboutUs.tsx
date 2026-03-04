@@ -9,12 +9,12 @@ export const AboutUs = () => {
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">About Us</h2>
           <p className="mt-5 text-base leading-relaxed text-zinc-300 sm:text-lg">
-            We are an international education consultancy helping students from Africa secure admissions in the
-            United Kingdom and Australia.
+            We are an international education and workforce consultancy committed to creating global opportunities for Africans.<br />
+            Beyond helping students secure admissions in the United Kingdom and Australia, we also support foreign job seekers in connecting with verified employers abroad. We bridge the gap between talent and opportunity — whether through education or employment.
           </p>
           <p className="mt-4 text-base leading-relaxed text-zinc-400 sm:text-lg">
-            Our mission is to make the admission process transparent, simple, and legally compliant. We provide
-            personalized guidance from application to visa approval.
+            Our mission is to make international study and work pathways transparent, simple, and legally compliant. We provide personalized guidance from application to visa approval, ensuring every step is handled professionally and ethically.<br />
+            We are not just consultants — we are partners in your global journey.
           </p>
 
           <div className="mx-auto mt-6 flex w-full max-w-md flex-col gap-3 text-left">
@@ -39,7 +39,7 @@ export const AboutUs = () => {
             </span>
             <h3 className="text-base font-semibold text-zinc-100 sm:text-lg">Dedicated Support</h3>
             <p className="mt-2 text-base leading-relaxed text-zinc-400">
-              Every student is assigned a dedicated officer to ensure smooth communication and support.
+              Every applicant is assigned a dedicated officer to ensure smooth communication and personalized support throughout their study or employment journey.
             </p>
           </div>
         </div>

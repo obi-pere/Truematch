@@ -16,6 +16,11 @@ enum ApplicationStatus {
   SUBMITTED
 }
 
+enum NotificationMessageType {
+  SYSTEM_MESSAGE
+  ADMIN_MESSAGE
+}
+
 model User {
   id        String   @id @default(uuid())
   fullName  String
@@ -41,8 +46,28 @@ model User {
   applications Application[]
   sentMessages ChatMessage[] @relation("SentMessages")
   receivedMessages ChatMessage[] @relation("ReceivedMessages")
+  sentNotifications Notification[] @relation("NotificationSender")
+  receivedNotifications Notification[] @relation("NotificationRecipient")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id String @id
+  recipientUserId String
+  senderUserId String?
+  message String
+  messageType NotificationMessageType
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipientUser User @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  senderUser User? @relation("NotificationSender", fields: [senderUserId], references: [id], onDelete: SetNull)
+
+  @@index([recipientUserId, createdAt])
+  @@index([recipientUserId, readAt])
+  @@index([messageType, createdAt])
 }
 
 model ChatMessage {
@@ -92,7 +117,7 @@ model Application {
   canadaLoaStatus String?
   hasViewedTracker Boolean @default(false)
   hasAdminViewed Boolean @default(false)
-  applicationStatus String @default("APPLICATION_PENDING")
+  applicationStatus String?
   status    ApplicationStatus @default(SUBMITTED)
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt

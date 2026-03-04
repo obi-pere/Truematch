@@ -6,15 +6,18 @@ type BuildInitialAvatarUrlParams = {
   size?: number;
 };
 
-const SOFT_BACKGROUND_COLORS = [
-  'dbeafe',
-  'c7d2fe',
-  'e9d5ff',
-  'fbcfe8',
-  'fde68a',
-  'bbf7d0',
-  'bae6fd'
+const VIVID_BACKGROUND_COLORS = [
+  '1d4ed8',
+  'dc2626',
+  '059669',
+  '7c3aed',
+  'ea580c',
+  'be123c',
+  '0891b2',
+  '4338ca'
 ] as const;
+
+const BRAND_PRIMARY_HEX = '8b5cf6';
 
 const toInitial = (value: string): string => {
   const trimmed = value.trim();
@@ -45,9 +48,12 @@ export const buildInitialAvatarUrl = ({
 }: BuildInitialAvatarUrlParams): string => {
   const seedSource = fullName?.trim() || email?.trim() || id?.trim() || fallback;
   const initial = toInitial(seedSource);
-  const colorSeed = id?.trim() || fullName?.trim() || email?.trim() || fallback;
-  const colorIndex = hashString(colorSeed) % SOFT_BACKGROUND_COLORS.length;
-  const backgroundColor = SOFT_BACKGROUND_COLORS[colorIndex];
+  const colorIndex = hashString(initial) % VIVID_BACKGROUND_COLORS.length;
+  const backgroundColor = VIVID_BACKGROUND_COLORS[colorIndex];
 
-  return `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(initial)}&chars=1&fontWeight=700&textColor=334155&backgroundType=solid&backgroundColor=${backgroundColor}&size=${size}`;
+  return `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(seedSource)}&chars=1&fontWeight=700&textColor=ffffff&backgroundType=solid&backgroundColor=${backgroundColor}&size=${size}`;
+};
+
+export const buildSystemAvatarUrl = (size = 40): string => {
+  return `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent('truematch-system-robot-v4')}&backgroundType=solid&backgroundColor=${BRAND_PRIMARY_HEX}&size=${size}`;
 };

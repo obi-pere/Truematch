@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Footer } from '../../components/layout/Footer';
 import { Navbar } from '../../components/layout/Navbar';
+import { Breadcrumbs } from '../../components/ui/Breadcrumbs';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { applicationService } from '../../services/application.service';
 import type { Application, ApplicationDocumentType } from '../../types/user';
@@ -74,7 +75,7 @@ export const EmploymentApplicationPage = () => {
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl rounded-xl border border-white/10 bg-dark-card p-6">
-            <h1 className="text-lg font-semibold text-zinc-100">Application not found</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-100">Application not found</h1>
             <p className="mt-2 text-sm text-zinc-400">
               {loading
                 ? 'Loading your application data...'
@@ -93,8 +94,15 @@ export const EmploymentApplicationPage = () => {
       <Navbar />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-5xl px-5 py-6 sm:px-6">
-          <h1 className="text-lg font-semibold text-zinc-100">Work Application — {liveApplication.skillOrProfession || 'N/A'}</h1>
+        <div className="mx-auto max-w-5xl px-5 py-4 sm:px-6">
+          <Breadcrumbs
+            items={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Applications', href: '/dashboard/applications' },
+              { label: 'Details' }
+            ]}
+          />
+          <h1 className="mt-4 text-xl font-semibold tracking-tight text-zinc-100">Work Application — {liveApplication.skillOrProfession || 'N/A'}</h1>
           <p className="mt-1 text-sm text-zinc-400">
             View and manage your employment application details and supporting documents.
           </p>

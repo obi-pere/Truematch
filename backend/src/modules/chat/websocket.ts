@@ -2,6 +2,7 @@ import type { IncomingMessage } from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
 import { verifyAccessToken } from '../../utils/jwt';
 import { addConversationMessage } from './chat.service';
+import type { NotificationItem } from '../notification/notification.service';
 
 type WsInboundMessage = {
   type: 'private_message';
@@ -38,6 +39,9 @@ type WsOutboundMessage = {
   fromUserId: string;
   toUserId: string;
   isTyping: boolean;
+} | {
+  type: 'notification';
+  notification: NotificationItem;
 };
 
 const userConnections = new Map<string, Set<WebSocket>>();
@@ -172,6 +176,10 @@ const broadcastToUser = (userId: string, payload: WsOutboundMessage): void => {
       socket.send(serialized);
     }
   });
+};
+
+export const pushNotificationToUser = (userId: string, payload: Extract<WsOutboundMessage, { type: 'notification' }>): void => {
+  broadcastToUser(userId, payload);
 };
 
 const sendPresenceSnapshot = (subscriberUserId: string): void => {

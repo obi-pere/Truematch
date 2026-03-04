@@ -37,7 +37,7 @@ export const StepPassportDetails = ({ onSubmit, onBack, loading, initialValues }
       <Input
         id="passportNumber"
         label="Passport Number"
-        placeholder="A12345678"
+        placeholder="Enter passport number"
         error={errors.passportNumber?.message}
         {...register('passportNumber')}
       />

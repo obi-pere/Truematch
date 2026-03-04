@@ -1,8 +1,10 @@
 import { FilePdf, PaperPlaneTilt, Paperclip, X } from '@phosphor-icons/react';
 import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { PdfPreview } from '../../components/chat/PdfPreview';
+import { ChatHeader } from '../../components/chat/ChatHeader';
+import { useViewportHeight } from '../../hooks/useViewportHeight';
 import {
   chatService,
   decodeAttachmentMessageContent,
@@ -33,7 +35,9 @@ type PendingComposerAttachment = {
 };
 
 export const DashboardChatPage = () => {
+  useViewportHeight();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
   const [draft, setDraft] = useState('');
   const [peer, setPeer] = useState<ChatUser | null>(null);
@@ -53,7 +57,9 @@ export const DashboardChatPage = () => {
   const typingHeartbeatIntervalRef = useRef<number | null>(null);
   const peerTypingTimeoutRef = useRef<number | null>(null);
   const hasEmittedTypingRef = useRef(false);
+  const clearUserUnread = useChatNotificationStore((state) => state.clearUserUnread);
   const clearAdminUnreadForUser = useChatNotificationStore((state) => state.clearAdminUnreadForUser);
+  const setNotificationContext = useChatNotificationStore((state) => state.setContext);
   const presenceByUserId = useChatNotificationStore((state) => state.presenceByUserId);
   const subscribeToPresence = useChatNotificationStore((state) => state.subscribeToPresence);
 
@@ -63,7 +69,7 @@ export const DashboardChatPage = () => {
     email: peer?.email,
     id: peer?.id,
     fallback: 'Chat',
-    size: 36
+    size: 44
   });
   const peerAvatarUrl =
     peer?.role === 'ADMIN' && peer.profilePhotoUrl
@@ -72,6 +78,10 @@ export const DashboardChatPage = () => {
 
   const requestedPeerUserId = useMemo(() => {
     if (user?.role === 'ADMIN') {
+      return conversationId;
+    }
+
+    if (user?.role === 'USER') {
       return conversationId;
     }
 
@@ -180,6 +190,8 @@ export const DashboardChatPage = () => {
 
         if (user.role === 'ADMIN') {
           clearAdminUnreadForUser(cachedConversation.peer.id);
+        } else {
+          clearUserUnread();
         }
 
         return;
@@ -207,6 +219,8 @@ export const DashboardChatPage = () => {
 
         if (user.role === 'ADMIN') {
           clearAdminUnreadForUser(resolvedPeer.id);
+        } else {
+          clearUserUnread();
         }
       } catch (_error) {
         if (isCancelled) {
@@ -228,7 +242,27 @@ export const DashboardChatPage = () => {
     return () => {
       isCancelled = true;
     };
-  }, [clearAdminUnreadForUser, requestedPeerUserId, user]);
+  }, [clearAdminUnreadForUser, clearUserUnread, requestedPeerUserId, user]);
+
+  useEffect(() => {
+    const activePeerUserId = peer?.id ?? null;
+
+    if (!activePeerUserId) {
+      return;
+    }
+
+    setNotificationContext({
+      isOnChatTab: true,
+      activePeerUserId
+    });
+
+    return () => {
+      setNotificationContext({
+        isOnChatTab: false,
+        activePeerUserId: null
+      });
+    };
+  }, [peer?.id, setNotificationContext]);
 
   useEffect(() => {
     if (!peer) {
@@ -482,50 +516,19 @@ export const DashboardChatPage = () => {
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-col">
-      <header className="border-b border-white/10">
-        <div className="px-3 py-2">
-          {isLoadingConversation ? (
-            <div className="flex items-center gap-2.5" aria-hidden>
-              <div className="h-8 w-8 animate-pulse rounded-full bg-white/10" />
-              <div className="space-y-1">
-                <div className="h-3.5 w-24 animate-pulse rounded bg-white/10" />
-                <div className="h-2.5 w-16 animate-pulse rounded bg-white/10" />
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2.5">
-              <div className="relative">
-                <img
-                  src={peerAvatarUrl}
-                  alt={`${peer?.fullName ?? 'Chat partner'} avatar`}
-                  className="h-8 w-8 rounded-full bg-dark-card"
-                />
-                <span
-                  className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border border-dark-bg ${
-                    isPeerOnline ? 'bg-emerald-400' : 'bg-zinc-500'
-                  }`}
-                  aria-hidden
-                />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-zinc-100">{peer?.fullName ?? 'Chat'}</h2>
-                {isPeerTyping ? (
-                  <div className="mt-0.5 flex items-center gap-1" role="status" aria-live="polite" aria-label="Typing indicator">
-                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce" style={{ animationDelay: '0ms', animationDuration: '0.9s' }} />
-                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce" style={{ animationDelay: '150ms', animationDuration: '0.9s' }} />
-                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce" style={{ animationDelay: '300ms', animationDuration: '0.9s' }} />
-                  </div>
-                ) : (
-                  <p className="text-xs text-zinc-400">{peer ? (isPeerOnline ? 'Online' : 'Offline') : 'Unavailable'}</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
+    <section className="flex min-h-0 flex-col overflow-hidden bg-dark-bg" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+      <ChatHeader
+        isLoading={isLoadingConversation}
+        avatarUrl={peerAvatarUrl}
+        avatarAlt={`${peer?.fullName ?? 'Chat partner'} avatar`}
+        title={peer?.fullName ?? 'Chat'}
+        isOnline={isPeerOnline}
+        showAvatarBorder={false}
+        showBackButton
+        onBackButtonClick={() => navigate(user?.role === 'ADMIN' ? '/admin/dashboard/chat' : '/dashboard/chat')}
+      />
 
-      <div className="flex-1 overflow-y-auto px-3 pt-3 pb-6">
+      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-6">
         <div className="flex min-h-full flex-col justify-end gap-4">
           {!isLoadingConversation && errorMessage ? <p className="text-sm text-rose-400">{errorMessage}</p> : null}
 
@@ -535,13 +538,15 @@ export const DashboardChatPage = () => {
 
           {messages.map((message) => {
             const isMine = message.fromUserId === user?.id;
+            const isAdminSender = peer && message.fromUserId === peer.id && peer.role === 'ADMIN';
             const decodedAttachment = decodeAttachmentMessageContent(message.content);
             const messageText = decodedAttachment?.text ?? (!decodedAttachment ? message.content : '');
 
             if (isMine) {
+              // Own message bubble: admin sees brand, user sees dark-card
               return (
                 <div key={message.id} className="flex justify-end">
-                  <div className="w-fit max-w-[85%] rounded-2xl rounded-br-md bg-brand-600 px-4 py-3 text-sm text-white sm:max-w-[32rem]">
+                  <div className={`w-fit max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-sm sm:max-w-[32rem] ${user?.role === 'ADMIN' ? 'bg-brand-600 text-white' : 'text-zinc-100'}`} style={user?.role !== 'ADMIN' ? { backgroundColor: '#333334' } : {}}>
                     {decodedAttachment ? (
                       <div className="space-y-2">
                         {decodedAttachment.attachment.mimeType.startsWith('image/') ? (
@@ -560,7 +565,7 @@ export const DashboardChatPage = () => {
                           <button
                             type="button"
                             onClick={() => void handlePdfDownload(message.id, decodedAttachment.attachment)}
-                            className="block w-full overflow-hidden rounded-lg border border-white/20 bg-white/10 text-left"
+                            className="block w-full overflow-hidden rounded-lg bg-black/20 text-left"
                           >
                             <PdfPreview
                               attachment={decodedAttachment.attachment}
@@ -571,10 +576,10 @@ export const DashboardChatPage = () => {
                             </p>
                           </button>
                         )}
-                        {messageText ? <p>{messageText}</p> : null}
+                        {messageText ? <p className="whitespace-break-spaces break-words">{messageText}</p> : null}
                       </div>
                     ) : (
-                      messageText
+                      <p className="whitespace-break-spaces break-words">{messageText}</p>
                     )}
                     <p className="mt-1 text-right text-[10px] leading-none text-white/60">{formatTime(message.createdAt)}</p>
                   </div>
@@ -587,11 +592,11 @@ export const DashboardChatPage = () => {
                 <img
                   src={peerAvatarUrl}
                   alt={`${peer?.fullName ?? 'Chat partner'} avatar`}
-                  className="mt-6 h-9 w-9 flex-shrink-0 rounded-full bg-dark-card"
+                  className="mt-5 h-10 w-10 flex-shrink-0 rounded-full bg-dark-card"
                 />
                 <div className="w-fit max-w-[calc(100%-3.75rem)] sm:max-w-[30rem]">
                   <p className="mb-1.5 text-sm font-medium text-white">{peer?.fullName ?? 'Chat partner'}</p>
-                  <div className="rounded-2xl rounded-tl-md bg-zinc-700 px-4 py-3 text-sm text-zinc-100">
+                  <div className={`rounded-2xl rounded-tl-md px-4 py-3 text-sm ${isAdminSender ? 'bg-brand-600 text-white' : 'text-zinc-100'}`} style={!isAdminSender ? { backgroundColor: '#333334' } : {}}>
                     {decodedAttachment ? (
                       <div className="space-y-2">
                         {decodedAttachment.attachment.mimeType.startsWith('image/') ? (
@@ -610,7 +615,7 @@ export const DashboardChatPage = () => {
                           <button
                             type="button"
                             onClick={() => void handlePdfDownload(message.id, decodedAttachment.attachment)}
-                            className="block w-full overflow-hidden rounded-lg border border-white/15 bg-black/20 text-left"
+                            className="block w-full overflow-hidden rounded-lg bg-black/20 text-left"
                           >
                             <PdfPreview
                               attachment={decodedAttachment.attachment}
@@ -621,10 +626,10 @@ export const DashboardChatPage = () => {
                             </p>
                           </button>
                         )}
-                        {messageText ? <p>{messageText}</p> : null}
+                        {messageText ? <p className="whitespace-break-spaces break-words">{messageText}</p> : null}
                       </div>
                     ) : (
-                      messageText
+                      <p className="whitespace-break-spaces break-words">{messageText}</p>
                     )}
                     <p className="mt-1 text-right text-[10px] leading-none text-zinc-400">{formatTime(message.createdAt)}</p>
                   </div>
@@ -632,13 +637,34 @@ export const DashboardChatPage = () => {
               </div>
             );
           })}
+
+          {isPeerTyping && !isLoadingConversation && peer ? (
+            <div className="flex items-start gap-3" role="status" aria-live="polite" aria-label={`${peer.fullName} is typing`}>
+              <img
+                src={peerAvatarUrl}
+                alt={`${peer.fullName} avatar`}
+                className="mt-5 h-12 w-12 flex-shrink-0 rounded-full bg-dark-card"
+              />
+              <div className="w-fit max-w-[calc(100%-3.75rem)] sm:max-w-[30rem]">
+                <p className="mb-1.5 text-sm font-medium text-white">{peer.fullName}</p>
+                <div className="rounded-2xl rounded-tl-md bg-zinc-700 px-4 py-3 text-sm text-zinc-100">
+                  <div className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce" style={{ animationDelay: '0ms', animationDuration: '0.9s' }} />
+                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce" style={{ animationDelay: '150ms', animationDuration: '0.9s' }} />
+                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce" style={{ animationDelay: '300ms', animationDuration: '0.9s' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      <div className="px-3 pt-3 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+      <div className="px-2 pt-3 pb-3 border-t border-white/10">
         <form onSubmit={handleSubmit} className="relative">
-          <div className="rounded-2xl border border-white/10 bg-dark-surface">
+          <div className="rounded-2xl bg-transparent">
             {pendingAttachment ? (
               <div className="border-b border-white/10 p-2">
                 <div className="flex items-start justify-between gap-2">
@@ -681,7 +707,7 @@ export const DashboardChatPage = () => {
               onChange={(event) => setDraft(event.target.value)}
               onBlur={() => stopTyping()}
               placeholder="Type your message..."
-              className="min-h-11 w-full resize-none bg-transparent py-3 pl-12 pr-12 text-sm leading-6 text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+              className="min-h-11 w-full resize-none bg-transparent py-3 pl-16 pr-12 text-sm leading-6 text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
               style={{ maxHeight: `${MAX_COMPOSER_HEIGHT}px` }}
             />
           </div>

@@ -1,5 +1,13 @@
 import type { Request, Response } from 'express';
 import { AppError } from '../../utils/app-error';
+import { pushNotificationToUser } from '../chat/websocket';
+import {
+  getMyNotificationsHandler,
+  markMyNotificationReadHandler,
+  getMyUnreadNotificationCountHandler,
+  markMyNotificationsReadHandler
+} from '../notification/notification.controller';
+import { ensureRequiredActionNotificationsForUser } from '../notification/notification.service';
 import {
   getCurrentUser,
   getCurrentUserWithAllData,
@@ -85,6 +93,15 @@ export const meAllDataHandler = async (req: Request, res: Response): Promise<voi
   if (!req.user) {
     throw new AppError(401, 'Unauthorized');
   }
+
+  const createdSystemNotifications = await ensureRequiredActionNotificationsForUser(req.user.userId);
+
+  createdSystemNotifications.forEach((notification) => {
+    pushNotificationToUser(req.user!.userId, {
+      type: 'notification',
+      notification
+    });
+  });
 
   const user = await getCurrentUserWithAllData(req.user.userId);
 
@@ -187,4 +204,11 @@ export const markMeDashboardVisitedHandler = async (req: Request, res: Response)
     message: 'Dashboard visit marked successfully',
     user: serializeUserWithAllData(user)
   });
+};
+
+export {
+  getMyNotificationsHandler,
+  markMyNotificationReadHandler,
+  getMyUnreadNotificationCountHandler,
+  markMyNotificationsReadHandler
 };

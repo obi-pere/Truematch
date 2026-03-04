@@ -44,7 +44,7 @@ export type Application = {
   offerTypeLabel?: string;
   offerDateLabel?: string;
   hasViewedTracker: boolean;
-  applicationStatus: ApplicationStatus;
+  applicationStatus: ApplicationStatus | null;
   createdAt: string;
   updatedAt: string;
 };

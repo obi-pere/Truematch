@@ -8,6 +8,7 @@ import {
 import { ApplicationProgressModal } from '../../components/application/ApplicationProgressModal';
 import { Footer } from '../../components/layout/Footer';
 import { Navbar } from '../../components/layout/Navbar';
+import { Breadcrumbs } from '../../components/ui/Breadcrumbs';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { applicationService } from '../../services/application.service';
 import type { Application, ApplicationDocumentType } from '../../types/user';
@@ -138,9 +139,10 @@ const getCountrySpecificOfferDocument = (application: Application) => {
 
 const mapApplicationToDetails = (application: Application, assignedAdmissionOfficerName: string) => {
   const countrySpecificOfferDocument = getCountrySpecificOfferDocument(application);
+  const resolvedApplicationStatus = application.applicationStatus ?? APPLICATION_STATUS.APPLICATION_PENDING;
 
   return {
-    applicationStatus: application.applicationStatus,
+    applicationStatus: resolvedApplicationStatus,
     universityName: application.universityName || 'Work Application',
     degree: application.degreeType || application.skillOrProfession || 'Application',
     applicationSummary: {
@@ -151,7 +153,7 @@ const mapApplicationToDetails = (application: Application, assignedAdmissionOffi
       degreeType: application.degreeType || 'N/A',
       studyMode: application.studyMode || 'N/A',
       intake: application.intake || 'N/A',
-      currentApplicationStatus: formatApplicationStatus(application.applicationStatus),
+      currentApplicationStatus: formatApplicationStatus(resolvedApplicationStatus),
       assignedAdmissionOfficer: assignedAdmissionOfficerName,
       offerType: 'Pending',
       offerDate: 'Pending',
@@ -240,7 +242,7 @@ export const ApplicationDetailsPage = () => {
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl rounded-xl border border-white/10 bg-dark-card p-6">
-            <h1 className="text-lg font-semibold text-zinc-100">Application not found</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-100">Application not found</h1>
             <p className="mt-2 text-sm text-zinc-400">
               {loading ? 'Loading your application data...' : 'This application could not be located.'}
             </p>
@@ -257,8 +259,15 @@ export const ApplicationDetailsPage = () => {
       <Navbar />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-5xl px-5 py-6 sm:px-6">
-          <h1 className="text-lg font-semibold text-zinc-100">{application.universityName} — {application.degree}</h1>
+        <div className="mx-auto max-w-5xl px-5 py-4 sm:px-6">
+          <Breadcrumbs
+            items={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Applications', href: '/dashboard/applications' },
+              { label: 'Details' }
+            ]}
+          />
+          <h1 className="mt-4 text-xl font-semibold tracking-tight text-zinc-100">{application.universityName} — {application.degree}</h1>
           <p className="mt-1 text-sm text-zinc-400">View and manage your application details, documents, and financial information.</p>
           {canTrackApplication ? (
             <div className="mt-4 flex justify-end">

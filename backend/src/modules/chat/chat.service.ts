@@ -31,6 +31,7 @@ type AdminConversation = {
   user: ChatUser;
   lastMessageAt: string;
   lastMessagePreview: string;
+  lastMessageFromUserId: string;
   unreadMessageCount: number;
 };
 
@@ -257,6 +258,7 @@ export const getAdminConversations = async (adminUserId: string): Promise<AdminC
           createdAt: 'desc'
         },
         select: {
+          fromUserId: true,
           createdAt: true,
           content: true
         }
@@ -278,6 +280,7 @@ export const getAdminConversations = async (adminUserId: string): Promise<AdminC
         user,
         lastMessageAt: lastMessage.createdAt.toISOString(),
         lastMessagePreview: getMessagePreview(lastMessage.content),
+        lastMessageFromUserId: lastMessage.fromUserId,
         unreadMessageCount
       };
     })

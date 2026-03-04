@@ -49,7 +49,7 @@ const getStatusLabel = (step: ApplicationStatus, universityCountry?: string | nu
 const getCompletedStageDescription = (step: ApplicationStatus, universityName: string): string => {
   switch (step) {
     case APPLICATION_STATUS.APPLICATION_PENDING:
-      return `Your application has been received and prepared for submission to ${universityName}.`;
+      return `Your application has been received and is being prepared for submission to ${universityName}.`;
     case APPLICATION_STATUS.SUBMITTED_TO_UNIVERSITY:
       return `Your application has been submitted to ${universityName}.`;
     case APPLICATION_STATUS.UNDER_REVIEW:

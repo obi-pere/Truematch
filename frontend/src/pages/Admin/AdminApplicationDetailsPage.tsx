@@ -1,10 +1,12 @@
-import { ArrowRight, RadioButton } from '@phosphor-icons/react';
+import { ArrowRight, Check, CopySimple, RadioButton } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Footer } from '../../components/layout/Footer';
 import { Navbar } from '../../components/layout/Navbar';
+import { Breadcrumbs } from '../../components/ui/Breadcrumbs';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Snackbar } from '../../components/ui/Snackbar';
+import { SNACKBAR_AUTO_DISMISS_DELAY_MS } from '../../constants/snackbar';
 import { applicationService, type AdminApplicationDetails } from '../../services/application.service';
 import { APPLICATION_STATUS, type ApplicationStatus } from '../../../../shared/applicationStatus';
 
@@ -54,6 +56,16 @@ const formatDocumentValue = (value: string | null) => {
   }
 };
 
+const MAX_EMAIL_DISPLAY_LENGTH = 26;
+
+const truncateText = (value: string, maxLength: number) => {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength)}...`;
+};
+
 export const AdminApplicationDetailsPage = () => {
   const { applicationId } = useParams();
   const [application, setApplication] = useState<AdminApplicationDetails | null>(null);
@@ -62,6 +74,7 @@ export const AdminApplicationDetailsPage = () => {
   const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [showStatusSuccessToast, setShowStatusSuccessToast] = useState(false);
+  const [copiedUserEmail, setCopiedUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -84,13 +97,22 @@ export const AdminApplicationDetailsPage = () => {
         }
 
         setApplication(result);
-      } catch (_error) {
+      } catch (error) {
         if (isCancelled) {
           return;
         }
 
+        const apiStatus =
+          typeof error === 'object' && error !== null && 'response' in error
+            ? (error as { response?: { status?: number } }).response?.status
+            : undefined;
+        const apiMessage =
+          typeof error === 'object' && error !== null && 'response' in error
+            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+            : undefined;
+
         setApplication(null);
-        setErrorMessage('Application not found.');
+        setErrorMessage(apiStatus === 404 ? 'Application not found.' : apiMessage || 'Unable to load application details.');
       } finally {
         if (!isCancelled) {
           setIsLoading(false);
@@ -112,7 +134,7 @@ export const AdminApplicationDetailsPage = () => {
 
     const timer = window.setTimeout(() => {
       setShowStatusSuccessToast(false);
-    }, 2200);
+    }, SNACKBAR_AUTO_DISMISS_DELAY_MS);
 
     return () => {
       window.clearTimeout(timer);
@@ -121,6 +143,10 @@ export const AdminApplicationDetailsPage = () => {
 
   const handleStatusChange = async (nextStatus: ApplicationStatus) => {
     if (!application || isUpdatingStatus) {
+      return;
+    }
+
+    if (application.applicationType !== 'study_scholarship' || !application.applicationStatus) {
       return;
     }
 
@@ -180,26 +206,50 @@ export const AdminApplicationDetailsPage = () => {
     }
   };
 
+  const handleCopyUserEmail = async (event: React.MouseEvent<HTMLButtonElement>, email: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopiedUserEmail(email);
+      window.setTimeout(() => {
+        setCopiedUserEmail(null);
+      }, 1400);
+    } catch (_error) {
+      setCopiedUserEmail(null);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-dark-bg">
       <Navbar />
 
-      <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+      <main className="flex-1 px-4 py-4 sm:px-6 lg:px-8">
         <Snackbar message="Application status updated" visible={showStatusSuccessToast} />
 
-        <div className="mx-auto max-w-4xl rounded-xl border border-white/10 bg-dark-card p-6">
-          {isLoading ? <LoadingSpinner className="py-8" /> : null}
+        <div className="mx-auto max-w-4xl">
+          <Breadcrumbs
+            items={[
+              { label: 'Dashboard', href: '/admin/dashboard' },
+              { label: 'Applications', href: '/admin/dashboard/applications' },
+              { label: 'Details' }
+            ]}
+          />
 
-          {!isLoading && errorMessage ? (
-            <>
-              <h1 className="text-lg font-semibold text-zinc-100">Application not found</h1>
-              <p className="mt-2 text-sm text-zinc-400">{errorMessage}</p>
-            </>
-          ) : null}
+          <div className="mt-4 rounded-xl border border-white/10 bg-dark-card p-6">
+            {isLoading ? <LoadingSpinner className="py-8" /> : null}
 
-          {!isLoading && !errorMessage && application ? (
-            <>
-              <h1 className="text-lg font-semibold text-zinc-100">Personal Information</h1>
+            {!isLoading && errorMessage ? (
+              <>
+                <h1 className="text-lg font-semibold text-zinc-100">Application not found</h1>
+                <p className="mt-2 text-sm text-zinc-400">{errorMessage}</p>
+              </>
+            ) : null}
+
+            {!isLoading && !errorMessage && application ? (
+              <>
+                <h1 className="text-lg font-semibold text-zinc-100">Personal Information</h1>
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
                 <div>
@@ -209,7 +259,24 @@ export const AdminApplicationDetailsPage = () => {
 
                 <div>
                   <p className="text-xs uppercase tracking-wide text-zinc-500">Email</p>
-                  <p className="mt-1 text-sm font-medium text-zinc-200">{application.user.email}</p>
+                  <div className="mt-1 inline-flex max-w-full items-center gap-2 text-sm font-medium text-zinc-200">
+                    <span className="w-[170px] truncate sm:w-[220px]">
+                      {truncateText(application.user.email, MAX_EMAIL_DISPLAY_LENGTH)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(event) => void handleCopyUserEmail(event, application.user.email)}
+                      className="inline-flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition-colors hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      aria-label="Copy user email"
+                      title="Copy user email"
+                    >
+                      {copiedUserEmail === application.user.email ? (
+                        <Check size={13} weight="bold" />
+                      ) : (
+                        <CopySimple size={13} weight="bold" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -246,65 +313,73 @@ export const AdminApplicationDetailsPage = () => {
 
               <div className="mt-6 border-t border-white/10" aria-hidden />
 
-              <section className="mt-6">
-                <h2 className="text-sm font-semibold text-zinc-100">Application Progress Control</h2>
-
-                <div className="mt-3 space-y-3">
-                  {ADMIN_PROGRESS_OPTIONS.map((option) => {
-                    const currentIndex = STATUS_ORDER.indexOf(application.applicationStatus);
-                    const stageIndex = STATUS_ORDER.indexOf(option.value);
-                    const normalizedCurrentIndex = currentIndex >= 0 ? currentIndex : 0;
-                    const isCompleted =
-                      normalizedCurrentIndex >= 1 && stageIndex >= 1 && stageIndex <= normalizedCurrentIndex;
-                    const isCurrent =
-                      normalizedCurrentIndex < STATUS_ORDER.length - 1 && stageIndex === normalizedCurrentIndex + 1;
-                    const disabled = isUpdatingStatus || !isCurrent;
-                    const iconClassName = disabled ? 'text-zinc-500' : 'text-brand-500';
+              {application.applicationType === 'study_scholarship' && application.applicationStatus ? (
+                <section className="mt-6">
+                  <h2 className="text-sm font-semibold text-zinc-100">Application Progress Control</h2>
+                  {(() => {
+                    const currentStatus = application.applicationStatus;
 
                     return (
-                      <label
-                        key={option.value}
-                        className={`flex items-center gap-3 text-sm ${
-                          disabled ? 'cursor-not-allowed text-zinc-500' : 'cursor-pointer text-zinc-200'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="applicationProgressControl"
-                          value={option.value}
-                          checked={false}
-                          disabled={disabled}
-                          onChange={() => {
-                            void handleStatusChange(option.value);
-                          }}
-                          className="sr-only"
-                        />
-                        <RadioButton
-                          size={18}
-                          weight={isCompleted ? 'fill' : 'regular'}
-                          className={iconClassName}
-                          aria-hidden
-                        />
-                        <span>{option.label}</span>
-                      </label>
+                      <div className="mt-3 space-y-3">
+                        {ADMIN_PROGRESS_OPTIONS.map((option) => {
+                          const currentIndex = STATUS_ORDER.indexOf(currentStatus);
+                          const stageIndex = STATUS_ORDER.indexOf(option.value);
+                          const normalizedCurrentIndex = currentIndex >= 0 ? currentIndex : 0;
+                          const isCompleted =
+                            normalizedCurrentIndex >= 1 && stageIndex >= 1 && stageIndex <= normalizedCurrentIndex;
+                          const isCurrent =
+                            normalizedCurrentIndex < STATUS_ORDER.length - 1 && stageIndex === normalizedCurrentIndex + 1;
+                          const disabled = isUpdatingStatus || !isCurrent;
+                          const iconClassName = disabled ? 'text-zinc-500' : 'text-brand-500';
+
+                          return (
+                            <label
+                              key={option.value}
+                              className={`flex items-center gap-3 text-sm ${
+                                disabled ? 'cursor-not-allowed text-zinc-500' : 'cursor-pointer text-zinc-200'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="applicationProgressControl"
+                                value={option.value}
+                                checked={false}
+                                disabled={disabled}
+                                onChange={() => {
+                                  void handleStatusChange(option.value);
+                                }}
+                                className="sr-only"
+                              />
+                              <RadioButton
+                                size={18}
+                                weight={isCompleted ? 'fill' : 'regular'}
+                                className={iconClassName}
+                                aria-hidden
+                              />
+                              <span>{option.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
                     );
-                  })}
+                  })()}
+
+                  {statusUpdateError ? <p className="mt-2 text-xs text-red-400">{statusUpdateError}</p> : null}
+                </section>
+              ) : null}
+
+                <div className="mt-4 flex justify-end">
+                  <Link
+                    to={`/chat/${application.user.id}`}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-brand-400 transition-colors hover:text-brand-300"
+                  >
+                    Go to chat
+                    <ArrowRight size={14} weight="bold" />
+                  </Link>
                 </div>
-
-                {statusUpdateError ? <p className="mt-2 text-xs text-red-400">{statusUpdateError}</p> : null}
-              </section>
-
-              <div className="mt-4 flex justify-end">
-                <Link
-                  to={`/admin/dashboard/chat/${application.user.id}`}
-                  className="inline-flex items-center gap-1 text-sm font-medium text-brand-400 transition-colors hover:text-brand-300"
-                >
-                  Go to chat
-                  <ArrowRight size={14} weight="bold" />
-                </Link>
-              </div>
-            </>
-          ) : null}
+              </>
+            ) : null}
+          </div>
         </div>
       </main>
 
