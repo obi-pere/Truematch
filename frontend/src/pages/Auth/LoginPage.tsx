@@ -43,7 +43,7 @@ export const LoginPage = () => {
       const isAdmin = useAuthStore.getState().user?.role === 'ADMIN';
       navigate(isAdmin ? '/admin/dashboard' : '/dashboard');
     } catch (_error) {
-      setErrorMessage('Invalid email or password.');
+      setErrorMessage('Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -60,8 +60,8 @@ export const LoginPage = () => {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <Input id="email" type="email" label="Email" placeholder="ada@example.com" error={errors.email?.message} {...register('email')} />
-            <Input id="password" type="password" label="Password" placeholder="••••••••" error={errors.password?.message} {...register('password')} />
+            <Input id="email" type="email" label="Email" placeholder="Enter your email address" error={errors.email?.message} {...register('email')} />
+            <Input id="password" type="password" label="Password" placeholder="Enter your password" error={errors.password?.message} {...register('password')} />
 
             {errorMessage ? (
               <p className="rounded-lg bg-rose-500/10 px-4 py-2.5 text-center text-sm text-rose-400">
