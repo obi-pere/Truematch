@@ -6,6 +6,9 @@ import { PdfPreview } from '../../components/chat/PdfPreview';
 import { ChatHeader } from '../../components/chat/ChatHeader';
 import { useViewportHeight } from '../../hooks/useViewportHeight';
 import {
+  api,
+} from '../../services/api';
+import {
   chatService,
   decodeAttachmentMessageContent,
   encodeAttachmentMessageContent,
@@ -53,6 +56,7 @@ export const DashboardChatPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
   const typingIdleTimeoutRef = useRef<number | null>(null);
   const typingHeartbeatIntervalRef = useRef<number | null>(null);
   const peerTypingTimeoutRef = useRef<number | null>(null);
@@ -124,6 +128,13 @@ export const DashboardChatPage = () => {
     if (peerTypingTimeoutRef.current !== null) {
       window.clearTimeout(peerTypingTimeoutRef.current);
       peerTypingTimeoutRef.current = null;
+    }
+  };
+
+  const clearReconnectTimeout = () => {
+    if (reconnectTimeoutRef.current !== null) {
+      window.clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
   };
 
@@ -297,87 +308,137 @@ export const DashboardChatPage = () => {
       return;
     }
 
-    const socket = chatService.createSocket();
-    socketRef.current = socket;
+    let isCancelled = false;
 
-    socket.onopen = () => {
-      setIsSocketReady(true);
-    };
-
-    socket.onclose = () => {
-      setIsSocketReady(false);
-    };
-
-    socket.onerror = () => {
-      setIsSocketReady(false);
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data as string) as
-          | (ChatMessage & { type?: string })
-          | { type: 'typing'; fromUserId: string; toUserId: string; isTyping: boolean };
-
-        if (
-          payload.type === 'typing' &&
-          'fromUserId' in payload &&
-          'toUserId' in payload &&
-          'isTyping' in payload &&
-          typeof payload.fromUserId === 'string' &&
-          typeof payload.toUserId === 'string' &&
-          typeof payload.isTyping === 'boolean'
-        ) {
-          const participants = [payload.fromUserId, payload.toUserId];
-
-          if (!participants.includes(user.id) || !participants.includes(peer.id) || payload.fromUserId !== peer.id) {
-            return;
-          }
-
-          if (!payload.isTyping) {
-            setIsPeerTyping(false);
-            clearPeerTypingTimeout();
-            return;
-          }
-
-          setIsPeerTyping(true);
-          clearPeerTypingTimeout();
-          peerTypingTimeoutRef.current = window.setTimeout(() => {
-            setIsPeerTyping(false);
-            peerTypingTimeoutRef.current = null;
-          }, 3000);
-          return;
-        }
-
-        if (payload.type !== 'private_message') {
-          return;
-        }
-
-        const participants = [payload.fromUserId, payload.toUserId];
-
-        if (!participants.includes(user.id) || !participants.includes(peer.id)) {
-          return;
-        }
-
-        setMessages((current) => {
-          if (current.some((item) => item.id === payload.id)) {
-            return current;
-          }
-
-          return [...current, payload];
-        });
-
-        if (payload.fromUserId === peer.id) {
-          setIsPeerTyping(false);
-          clearPeerTypingTimeout();
-        }
-      } catch (_error) {
+    const scheduleReconnect = () => {
+      if (isCancelled || reconnectTimeoutRef.current !== null) {
         return;
       }
+
+      reconnectTimeoutRef.current = window.setTimeout(async () => {
+        reconnectTimeoutRef.current = null;
+
+        try {
+          await api.post('/auth/refresh');
+        } catch (_error) {
+          return;
+        }
+
+        if (!isCancelled) {
+          connectSocket();
+        }
+      }, 1200);
     };
 
+    const connectSocket = () => {
+      if (isCancelled) {
+        return;
+      }
+
+      const socket = chatService.createSocket();
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        if (isCancelled) {
+          return;
+        }
+
+        clearReconnectTimeout();
+        setIsSocketReady(true);
+      };
+
+      socket.onclose = () => {
+        if (socketRef.current === socket) {
+          socketRef.current = null;
+        }
+
+        if (isCancelled) {
+          return;
+        }
+
+        setIsSocketReady(false);
+        scheduleReconnect();
+      };
+
+      socket.onerror = () => {
+        if (isCancelled) {
+          return;
+        }
+
+        setIsSocketReady(false);
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data as string) as
+            | (ChatMessage & { type?: string })
+            | { type: 'typing'; fromUserId: string; toUserId: string; isTyping: boolean };
+
+          if (
+            payload.type === 'typing' &&
+            'fromUserId' in payload &&
+            'toUserId' in payload &&
+            'isTyping' in payload &&
+            typeof payload.fromUserId === 'string' &&
+            typeof payload.toUserId === 'string' &&
+            typeof payload.isTyping === 'boolean'
+          ) {
+            const participants = [payload.fromUserId, payload.toUserId];
+
+            if (!participants.includes(user.id) || !participants.includes(peer.id) || payload.fromUserId !== peer.id) {
+              return;
+            }
+
+            if (!payload.isTyping) {
+              setIsPeerTyping(false);
+              clearPeerTypingTimeout();
+              return;
+            }
+
+            setIsPeerTyping(true);
+            clearPeerTypingTimeout();
+            peerTypingTimeoutRef.current = window.setTimeout(() => {
+              setIsPeerTyping(false);
+              peerTypingTimeoutRef.current = null;
+            }, 3000);
+            return;
+          }
+
+          if (payload.type !== 'private_message') {
+            return;
+          }
+
+          const participants = [payload.fromUserId, payload.toUserId];
+
+          if (!participants.includes(user.id) || !participants.includes(peer.id)) {
+            return;
+          }
+
+          setMessages((current) => {
+            if (current.some((item) => item.id === payload.id)) {
+              return current;
+            }
+
+            return [...current, payload];
+          });
+
+          if (payload.fromUserId === peer.id) {
+            setIsPeerTyping(false);
+            clearPeerTypingTimeout();
+          }
+        } catch (_error) {
+          return;
+        }
+      };
+    };
+
+    connectSocket();
+
     return () => {
+      isCancelled = true;
+      clearReconnectTimeout();
       stopTyping();
-      socket.close();
+      socketRef.current?.close();
       socketRef.current = null;
       setIsSocketReady(false);
       setIsPeerTyping(false);
@@ -430,7 +491,12 @@ export const DashboardChatPage = () => {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
-    if (!peer || !socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+    if (!peer) {
+      return;
+    }
+
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      setErrorMessage('Reconnecting to chat. Please try again in a moment.');
       return;
     }
 
@@ -731,7 +797,7 @@ export const DashboardChatPage = () => {
           <button
             type="submit"
             aria-label="Send message"
-            disabled={(!draft.trim() && !pendingAttachment) || !isSocketReady || !peer || isUploadingAttachment}
+            disabled={(!draft.trim() && !pendingAttachment) || !peer || isUploadingAttachment}
             className="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 transition-colors hover:text-white disabled:text-zinc-600"
           >
             <PaperPlaneTilt size={18} weight="fill" />
